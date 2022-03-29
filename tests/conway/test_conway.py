@@ -89,17 +89,12 @@ def test_evolve2():
 
 def test_pdraw():
     fg = cnw.FiniteGrid(6)
-    fg.pdraw(boundary=False)
-    fg.pdraw(boundary=False)
     fg.print(boundary=False)
-
-    fg.pdraw(boundary=True)
-    fg.pdraw(boundary=True)
     fg.print(boundary=True)
 
 def test_pdraw_evolve():
     fg = cnw.FiniteGrid(6)
-    fg.pdraw(boundary=False)
+    fg.print(boundary=False)
     fg.evolve(100)
 
 def test_dump():
