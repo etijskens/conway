@@ -10,7 +10,6 @@ Welcome to conway's documentation!
    installation
    api
    authors
-   changelog
 
 ##################
 Indices and tables
