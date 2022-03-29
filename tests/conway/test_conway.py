@@ -34,11 +34,12 @@ def test_FiniteGrid():
                 else:
                     assert fg.states[i,j] in (0,1)
 
+
 def test_evolve():
-    for i in range(10000):
+    for i in range(100000):
         print(i)
         fg = cnw.FiniteGrid(3)
-        fg.print()
+        fg.print(boundary=False)
         center_alive = fg.states[2,2]
         center_count = np.sum(fg.states[1:4,1:4]) - fg.states[2,2]
         if center_alive:
@@ -47,14 +48,15 @@ def test_evolve():
             expected = center_count == 3
         print(center_alive, center_count, expected, "=======")
         fg.evolve()
-        fg.print()
+        fg.print(boundary=False)
         assert fg.states[2,2] == expected
+
 
 def test_evolve1():
     fg = cnw.FiniteGrid(3)
     fg.states[:,:] = 0
     fg.states[1:4,1] = 1
-    fg.print()
+    fg.print(boundary=False)
     center_alive = fg.states[2,2]
     center_count = np.sum(fg.states[1:4,1:4]) - fg.states[2,2]
     if center_alive:
@@ -63,14 +65,15 @@ def test_evolve1():
         expected = center_count == 3
     print(center_alive, center_count, expected, "=======")
     fg.evolve()
-    fg.print()
+    fg.print(boundary=False)
     assert fg.states[2,2] == expected
+
 
 def test_evolve2():
     fg = cnw.FiniteGrid(3)
     fg.states[:,:] = 0
     fg.states[1:4,1:4] = np.array([[0,1,1],[0,1,0],[0,0,1]])
-    fg.print()
+    fg.print(boundary=False)
     center_alive = fg.states[2,2]
     center_count = np.sum(fg.states[1:4,1:4]) - fg.states[2,2]
     if center_alive:
@@ -79,8 +82,24 @@ def test_evolve2():
         expected = center_count == 3
     print(center_alive, center_count, expected, "=======")
     fg.evolve()
-    fg.print()
+    fg.print(boundary=False)
     assert fg.states[2,2] == expected
+
+def test_pdraw():
+    fg = cnw.FiniteGrid(6)
+    fg.pdraw(boundary=False)
+    fg.pdraw(boundary=False)
+    fg.print(boundary=False)
+
+    fg.pdraw(boundary=True)
+    fg.pdraw(boundary=True)
+    fg.print(boundary=True)
+
+def test_pdraw_evolve():
+    fg = cnw.FiniteGrid(6)
+    fg.pdraw(boundary=False)
+    fg.evolve(100)
+
 
 
 
@@ -91,7 +110,7 @@ def test_evolve2():
 # that the source directory is on the path
 # ==============================================================================
 if __name__ == "__main__":
-    the_test_you_want_to_debug = test_evolve
+    the_test_you_want_to_debug = test_pdraw_evolve
 
     print("__main__ running", the_test_you_want_to_debug)
     the_test_you_want_to_debug()

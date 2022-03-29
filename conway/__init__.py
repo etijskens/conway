@@ -72,7 +72,8 @@ class FiniteGrid:
     """Naive NxN grid with.
 
     In order to not have to implement special boundary rules, we make the grid
-    (N+2)x(N+2) where the outer layers are always zero::
+    (N+2)x(N+2) where the outer layers are ghost cells which are just there to
+    make sure that index i-1, i+1, j-1 and j+1 exist for all cells (i,j)::
 
         0 | 0 0 0 0 | 0
         --+---------+--
@@ -82,6 +83,29 @@ class FiniteGrid:
         0 | 0 1 0 1 | 0
         --+---------+--
         0 | 0 0 0 0 | 0
+
+    The state of the ghost cells is determined by the boundary conditions:
+    * all zeros,
+    * reflective boundary condition: the ghost cell has the same state as the cell
+      on the inside of the boundary
+    * Periodic boundary condition: a ghost cell is a copy of the state at the other
+      end, as if the finite grid is repeated in the x and y direction.
+
+    This is a very simple naive approach, with important shortcomings:
+
+    * its finite grid is finite.
+
+    and gross inefficiencies
+
+    * it uses a Python int per cell (=64 bit) to store the state and an extra
+      Python int per cell to count the number of neighbouring cells.
+      As the count is at most 8, which can be stored with 3 bits, this approach
+      actually only uses 4 of 128 allocated bits per cell. That is, almost 97% of
+      the allocated memory actually wasted
+    * the evolve() method uses two double loops over all cells, which is very
+      inefficient
+
+    Think of approaches to cure these problems
 
     """
     boundary_conditions = ('zero', 'reflect', 'periodic')
@@ -109,6 +133,7 @@ class FiniteGrid:
             raise ValueError("boundary not in ('zero', 'reflect', 'periodic')")
 
         self.counts = np.zeros_like(self.states, dtype=int)
+        self.generation = 0
 
     def apply_bc(self, bc=None):
         if not bc is None:
@@ -138,6 +163,7 @@ class FiniteGrid:
         self.states[N + 1, :] = self.states[N, :]
 
     def apply_pbc(self):
+        """Apply periodic boundary condition."""
         N = self.N
         # edges
         self.states[1:N + 1, 0] = self.states[1:N + 1, N]
@@ -150,43 +176,71 @@ class FiniteGrid:
         self.states[0    , N + 1] = self.states[N, 1]
         self.states[N + 1, 0    ] = self.states[1, N]
 
-    def print(self):
-        if self.bc == 'zero':
-            for i in range(1,self.n-1):
-                s = ''
-                for j in range(1,self.n-1):
-                    s += f"{self.states[i, j]} "
-                print(s)
-        else:
+    def evolve(self, generations=1, draw=True, stop_if_static=False):
+        """Let the system evolve over ``generations`` generations."""
+        N = self.N
+        while generations>0:
+            if stop_if_static:
+                previous_states = np.copy(self.states)
+            for i in range(1,N+1):
+                for j in range(1,N+1):
+                    self.counts[i, j] = self.states[i-1, j-1] \
+                                      + self.states[i-1, j  ] \
+                                      + self.states[i-1, j+1] \
+                                      + self.states[i  , j-1] \
+                                      + self.states[i  , j+1] \
+                                      + self.states[i+1, j-1] \
+                                      + self.states[i+1, j  ] \
+                                      + self.states[i+1, j+1]
+            for i in range(1,N+1):
+                for j in range(1,N+1):
+                    if self.states[i,j] == True: # populated
+                        if not self.counts[i,j] in (2,3): # cell population dies
+                            self.states[i,j] = False
+                    else:
+                        if self.counts[i,j] == 3:
+                            self.states[i,j] = True
+
+            self.apply_bc()
+            self.generation += 1
+            generations -= 1
+            # stop if all cells are dead
+            if np.sum(self.states) == 0:
+                generations = 0
+            # stop if fixed state
+            if stop_if_static:
+                if np.all(previous_states == self.states):
+                    generations = 0
+            if draw:
+                self.pdraw(boundary=False)
+
+
+    def print(self, boundary=True):
+        if boundary:
             print(f'BC = {self.bc}')
             for i in range(self.n):
                 s = ''
                 for j in range(self.n):
                     s += f"{self.states[i, j]} "
                 print(s)
+        else:
+            for i in range(1,self.n-1):
+                s = ''
+                for j in range(1,self.n-1):
+                    s += f"{self.states[i, j]} "
+                print(s)
         print()
+        
 
-    def evolve(self):
-        """loop over all cells and count its alive neighbours."""
+    def pdraw(self, boundary=True):
+        """use the terminal to print the grid
+        """
         N = self.N
-
-        for i in range(1,N+1):
-            for j in range(1,N+1):
-                self.counts[i, j] = self.states[i-1, j-1] \
-                                  + self.states[i-1, j  ] \
-                                  + self.states[i-1, j+1] \
-                                  + self.states[i  , j-1] \
-                                  + self.states[i  , j+1] \
-                                  + self.states[i+1, j-1] \
-                                  + self.states[i+1, j  ] \
-                                  + self.states[i+1, j+1]
-        for i in range(1,N+1):
-            for j in range(1,N+1):
-                if self.states[i,j] == True: # populated
-                    if not self.counts[i,j] in (2,3): # cell population dies
-                        self.states[i,j] = False
-                else:
-                    if self.counts[i,j] == 3:
-                        self.states[i,j] = True
-
-        self.apply_bc()
+        ri = range(0,N+2) if boundary else range(1,N+1)
+        rj = range(0,N+2) if boundary else range(1,N+1)
+        for i in ri:
+            line = ''
+            for j in rj:
+                line += u'\u2588\u2588 ' if self.states[i,j] else u'   '
+            print(line)
+        print(f"generation = {self.generation}")
