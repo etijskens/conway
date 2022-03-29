@@ -63,7 +63,7 @@ Let's start off with a finite grid.
 
 """
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 import numpy as np
 import pickle
