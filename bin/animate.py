@@ -4,6 +4,10 @@ Animation using matplotlib.
 modified after https://gist.github.com/electronut/5836145
 """
 
+import sys
+if not '.' in sys.path:
+    sys.path.insert(0,'.')
+
 from conway import FiniteGrid
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
