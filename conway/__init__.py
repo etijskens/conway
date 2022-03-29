@@ -63,7 +63,7 @@ Let's start off with a finite grid.
 
 """
 
-__version__ = "0.0.0"
+__version__ = "0.1.0"
 
 import numpy as np
 
