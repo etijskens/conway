@@ -17,7 +17,7 @@ fg = FiniteGrid(N, boundary='periodic', dump=True)
 
 def update(data):
     fg.evolve(draw=False)
-    print(fg.generation)
+    plt.title(f"generation={fg.generation}")
     mat.set_data(fg.states)
     return [mat]
 
