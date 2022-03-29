@@ -1,4 +1,8 @@
-"""showing the evolution in the terminal using curses."""
+"""Showing the evolution in the terminal using the curses Python module.
+
+Check out https://www.youtube.com/watch?v=Db4oc8qc9RU and its successors
+for working with curses.
+"""
 
 import sys
 if not '.' in sys.path:

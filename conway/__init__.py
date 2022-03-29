@@ -1,65 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Package conway_mac
-=======================================
+Package conway
+==============
 
-Top-level package for conway_mac.
-
-Conway's game of life
-*********************
-
-Some useful/interesting links
-
-* `Game of life <https://nl.wikipedia.org/wiki/Game_of_Life>`_
-
-
-Concepts
---------
-* infinite grid of square cells
-* cells are either dead or alive
-* each cell has 8 neighbours. Let ``A_ij`` be the number of alive neighbours of cell ``ij``.
-  A populated cells remains populated, only if 2 or 3 or its neighbours are populated.
-  Otherwise, the cell's population dies (either of loneliness or overpopulation).
-  A non-populated cell is populated, if it has exactly 3 populated neighbouring cells
-  Note that one must count the neighbours of **all** cells before updating states.
-
-Implementation ideas
---------------------
-* We cannot store an infinite grid, as memory is finite.
-* We could store only the living cells and their location. That would allow for a finite
-  number of cells on an infinite grid. That would be a rather complex idea to begin with
-* We could start with a finite grid and use a reflecting boundary, surrounding the grid
-  with an extra layer which has the same state as the neighbouring layer on the inside.
-  e.g. on a 4x4 grid::
-
-    0 | 0 0 1 0 | 0
-    --+---------+--
-    0 | 0 0 1 0 | 0
-    0 | 0 1 0 0 | 0
-    0 | 0 0 1 0 | 0
-    0 | 0 1 0 1 | 1
-    --+---------+--
-    0 | 0 1 0 1 | 1
-
-  I.e., we would store a 6x6 grid with a different rule to update the outer cells.
-
-* We could apply periodic boundary conditions, i.e. the surrounding layer would be a copy
-  of the layer at the other end::
-
-    1 | 0 1 0 1 | 0
-    --+---------+--
-    0 | 0 0 1 0 | 0
-    0 | 0 1 0 0 | 0
-    0 | 0 0 1 0 | 0
-    1 | 0 1 0 1 | 0
-    --+---------+--
-    0 | 0 0 1 0 | 0
-
-  That would be some sort of infinity.
-
-
-Let's start off with a finite grid.
+Top-level package for conway
 
 """
 
@@ -71,11 +16,33 @@ import time
 
 
 class FiniteGrid:
-    """Naive NxN grid with.
+    """Naive NxN grid with different boundary conditions. Cells are randomly assigned
+    state (dead or alive).
+
+    :param int N: number of cells in the X and Y direction.
+    :param str boundary: boundary condition: ``zero``, ``reflecting``, or ``periodic``.
+    :param bool dump: pickle the generated FiniteGrid object. (Practical if you
+        discover a nice pattern and you want to view it again.
+    :param bool load: if True, load a file with a pickled FiniteGrid object, e.g. to
+        view its evolution again.
+    :param str filename: name of the file to be dumped or loaded.
 
     In order to not have to implement special boundary rules, we make the grid
     (N+2)x(N+2) where the outer layers are ghost cells which are just there to
     make sure that index i-1, i+1, j-1 and j+1 exist for all cells (i,j)::
+
+        . | . . . .  | .
+        --+---------+--
+        . | 0 0 1 0 | .
+        . | 0 1 0 0 | .
+        . | 0 0 1 0 | .
+        . | 0 1 0 1 | .
+        --+---------+--
+        . | . . . . | .
+
+    The state of the ghost cells is determined by the boundary conditions:
+
+    * all zeros::
 
         0 | 0 0 0 0 | 0
         --+---------+--
@@ -86,12 +53,29 @@ class FiniteGrid:
         --+---------+--
         0 | 0 0 0 0 | 0
 
-    The state of the ghost cells is determined by the boundary conditions:
-    * all zeros,
     * reflective boundary condition: the ghost cell has the same state as the cell
-      on the inside of the boundary
+      on the inside of the boundary::
+
+        0 | 0 0 1 0 | 0
+        --+---------+--
+        0 | 0 0 1 0 | 0
+        0 | 0 1 0 0 | 0
+        0 | 0 0 1 0 | 0
+        0 | 0 1 0 1 | 1
+        --+---------+--
+        0 | 0 1 0 1 | 1
+
     * Periodic boundary condition: a ghost cell is a copy of the state at the other
-      end, as if the finite grid is repeated in the x and y direction.
+      end, as if the finite grid is repeated in the x and y direction::
+
+        1 | 0 1 0 1 | 0
+        --+---------+--
+        0 | 0 0 1 0 | 0
+        0 | 0 1 0 0 | 0
+        0 | 0 0 1 0 | 0
+        1 | 0 1 0 1 | 0
+        --+---------+--
+        0 | 0 0 1 0 | 0
 
     This is a very simple naive approach, with important shortcomings:
 
@@ -108,7 +92,6 @@ class FiniteGrid:
       inefficient
 
     Think of approaches to cure these problems
-
     """
     boundary_conditions = ('zero', 'reflect', 'periodic')
 
@@ -148,6 +131,10 @@ class FiniteGrid:
 
 
     def apply_bc(self, bc=None):
+        """Apply a boundary condition to this FiniteGrid object.
+
+        :param str bc: a string identifying the type of boundary condition we want to apply.
+        """
         if not bc is None:
             self.bc = bc
         if self.bc == 'zero':
@@ -160,6 +147,9 @@ class FiniteGrid:
             raise ValueError("boundary not in ('zero', 'reflect', 'periodic')")
 
     def apply_0bc(self):
+        """Apply the zero boundary condition, i.e. surround this FiniteGrid
+        object by zeros.
+        """
         N = self.N
         self.states[:    , 0    ] = 0
         self.states[:    , N + 1] = 0
@@ -167,7 +157,9 @@ class FiniteGrid:
         self.states[N + 1, 1:N+1] = 0
 
     def apply_rbc(self):
-        """Apply reflecting boundary condition."""
+        """Apply the reflecting boundary condition, i.e. the surroundig elements
+        have the same value as the value on the inside of the boundary.
+        """
         N = self.N
         self.states[:, 0    ] = self.states[:, 1]
         self.states[:, N + 1] = self.states[:, N]
@@ -175,7 +167,15 @@ class FiniteGrid:
         self.states[N + 1, :] = self.states[N, :]
 
     def apply_pbc(self):
-        """Apply periodic boundary condition."""
+        """Apply the periodic boundary condition.
+
+        This can be viewed as:
+
+        * the square being folded such that opposite ends along each axis
+          are glued together. That first gives a tube and then a torus.
+        * the square being part of an infinite repetition along each axis
+          yielding a periodic pattern.
+        """
         N = self.N
         # edges
         self.states[1:N + 1, 0] = self.states[1:N + 1, N]
@@ -188,13 +188,24 @@ class FiniteGrid:
         self.states[0    , N + 1] = self.states[N, 1]
         self.states[N + 1, 0    ] = self.states[1, N]
 
-    def evolve(self, generations=1, draw=True, stop_if_static=False, curse=None, interval=0.1):
-        """Let the system evolve over ``generations`` generations."""
+    def evolve(self, n_generations=1, draw=True, stop_if_static=False, curse=None, interval=0.1):
+        """Let the system evolve over ``generations`` generations.
+
+        :param int n_generations: the number of generation to evolve.
+        :param bool draw: if True, draw each generation on the terminal.
+        :param bool stop_if_static: if True stops evolving the system if it is a static state.
+        :param float interval: seconds to wait between drawing two successive generations.
+
+        .. note:
+            ``stop_if_static`` does not end the evolution when patterns occur that are periodic in
+            time. A typical and much occurring time periodic pattern is three live cells in a row
+            which alternate being aligned along the X-axis and the Y-axis.
+        """
         if self.counts is None:
             self.counts = np.zeros_like(self.states, dtype=int)
 
         N = self.N
-        while generations>0:
+        while n_generations>0:
             if stop_if_static:
                 previous_states = np.copy(self.states)
             for i in range(1,N+1):
@@ -218,7 +229,7 @@ class FiniteGrid:
 
             self.apply_bc()
             self.generation += 1
-            generations -= 1
+            n_generations -= 1
             # stop if all cells are dead
             if np.sum(self.states) == 0:
                 generations = 0
@@ -234,6 +245,13 @@ class FiniteGrid:
 
 
     def print(self, boundary=True, symbols=None):
+        """Print this FiniteGrid object to the terminal.
+
+        :param bool boundary: if True, also prints the surrounding boundary layers.
+        :param list-like symbols: use ``symbols[0]`` for denoting dead cells, and
+            ``symbols[1]`` for denoting living cells in the output. The defaults are
+            `` `` and ``X``.
+        """
         if symbols:
             self.symbols = symbols
         irange = range(self.N+2) if boundary else range(1,self.N+1)
@@ -247,6 +265,18 @@ class FiniteGrid:
         print()
 
     def curse(self, stdscr, boundary=True, symbols=None):
+        """'Print' the FiniteGrid object to the terminal using the Python curses module.
+
+        This gives a nicer visualization because the successive generations are overwriting
+        each other, thus being more close to an animation. The current implementation is
+        limited to the size of the terminal.
+
+        :param stdscr: the curses wrapper object for the terminal.
+        :param bool boundary: if True, also prints the surrounding boundary layers.
+        :param list-like symbols: use ``symbols[0]`` for denoting dead cells, and
+            ``symbols[1]`` for denoting living cells in the output. The defaults are
+            `` `` and ``X``.
+        """
         if symbols:
             self.symbols = symbols
         irange = range(self.N+2) if boundary else range(1,self.N+1)
@@ -261,7 +291,10 @@ class FiniteGrid:
 
 
     def dump(self,filename='conway'):
-        """Pickle self (save to file)."""
+        """Pickle this FiniteGrid object (save to file).
+
+        :parameter str filename: name of the pickle file to contain the pickled FiniteGrid object>
+        """
         self.counts = None # we do not need to dump counts
         with open(f"{filename}.pickle", mode='wb') as file:
             pickle.dump(self, file=file)
@@ -269,7 +302,12 @@ class FiniteGrid:
 
     @staticmethod
     def load(filename='conway'):
-        """Unpickle a pickled FiniteGrid."""
+        """Unpickle a pickled FiniteGrid object.
+
+        :parameter str filename: name of the pickle file containing the pickled FiniteGrid object.
+        :return: a FiniteGrid object
+        :raises: RuntimeError if unpickling the file does not yield a FiniteGrid object.
+        """
         fn = f"{filename}.pickle"
         with open(fn, mode='rb') as file:
             fg = pickle.load(file=file)
