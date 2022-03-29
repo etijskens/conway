@@ -8,7 +8,7 @@ Top-level package for conway
 
 """
 
-__version__ = "0.3.1"
+__version__ = "0.4.0"
 
 import numpy as np
 import pickle
@@ -77,21 +77,6 @@ class FiniteGrid:
         --+---------+--
         0 | 0 0 1 0 | 0
 
-    This is a very simple naive approach, with important shortcomings:
-
-    * its finite grid is finite.
-
-    and gross inefficiencies
-
-    * it uses a Python int per cell (=64 bit) to store the state and an extra
-      Python int per cell to count the number of neighbouring cells.
-      As the count is at most 8, which can be stored with 3 bits, this approach
-      actually only uses 4 of 128 allocated bits per cell. That is, almost 97% of
-      the allocated memory actually wasted
-    * the evolve() method uses two double loops over all cells, which is very
-      inefficient
-
-    Think of approaches to cure these problems
     """
     boundary_conditions = ('zero', 'reflect', 'periodic')
 
