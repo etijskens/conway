@@ -8,7 +8,7 @@ Top-level package for conway
 
 """
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 import numpy as np
 import pickle
