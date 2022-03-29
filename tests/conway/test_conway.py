@@ -15,7 +15,9 @@ def test_FiniteGrid():
     fg = cnw.FiniteGrid()
     for bc in cnw.FiniteGrid.boundary_conditions:
         fg.apply_bc(bc)
-        fg.print()
+        fg.print(symbols='-+')
+        fg.print(symbols=['   ','[X]'])
+        fg.print(symbols=' X', boundary=False)
         N = fg.N
         s = fg.states
         for i in range(N + 2):
@@ -106,7 +108,6 @@ def test_dump():
     fg0.dump(filename=filename)
     fg1 = cnw.FiniteGrid(load=True, filename=filename)
     assert fg0.N == fg1.N
-    assert fg0.n == fg1.n
     assert fg0.bc == fg1.bc
     assert np.all(fg0.states == fg1.states)
 
@@ -118,7 +119,7 @@ def test_dump():
 # that the source directory is on the path
 # ==============================================================================
 if __name__ == "__main__":
-    the_test_you_want_to_debug = test_dump
+    the_test_you_want_to_debug = test_FiniteGrid
 
     print("__main__ running", the_test_you_want_to_debug)
     the_test_you_want_to_debug()

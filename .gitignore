@@ -1,4 +1,5 @@
 *.test.pickle
+bin/*.pickle
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

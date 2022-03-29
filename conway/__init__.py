@@ -67,6 +67,7 @@ __version__ = "0.2.1"
 
 import numpy as np
 import pickle
+import time
 
 
 class FiniteGrid:
@@ -140,6 +141,7 @@ class FiniteGrid:
 
             self.generation = 0
             self.counts = None
+            self.symbols = ' X'
 
             if dump:
                 self.dump(filename=filename)
@@ -186,7 +188,7 @@ class FiniteGrid:
         self.states[0    , N + 1] = self.states[N, 1]
         self.states[N + 1, 0    ] = self.states[1, N]
 
-    def evolve(self, generations=1, draw=True, stop_if_static=False):
+    def evolve(self, generations=1, draw=True, stop_if_static=False, curse=None, interval=0.1):
         """Let the system evolve over ``generations`` generations."""
         if self.counts is None:
             self.counts = np.zeros_like(self.states, dtype=int)
@@ -224,39 +226,38 @@ class FiniteGrid:
             if stop_if_static:
                 if np.all(previous_states == self.states):
                     generations = 0
-            if draw:
-                self.pdraw(boundary=False)
+            if not curse is None:
+                self.curse(curse)
+                time.sleep(interval)
+            elif draw:
+                self.print(boundary=False)
 
 
-    def print(self, boundary=True):
-        if boundary:
-            print(f'BC = {self.bc}')
-            for i in range(self.N+2):
-                s = ''
-                for j in range(self.N+2):
-                    s += f"{self.states[i, j]} "
-                print(s)
-        else:
-            for i in range(1,self.N+1):
-                s = ''
-                for j in range(1,self.N+1):
-                    s += f"{self.states[i, j]} "
-                print(s)
+    def print(self, boundary=True, symbols=None):
+        if symbols:
+            self.symbols = symbols
+        irange = range(self.N+2) if boundary else range(1,self.N+1)
+        jrange = range(self.N+2) if boundary else range(1,self.N+1)
+        # print(f'BC = {self.bc}')
+        for i in irange:
+            s = ''
+            for j in jrange:
+                s += self.symbols[self.states[i,j]]
+            print(s)
         print()
-        
 
-    def pdraw(self, boundary=True):
-        """use the terminal to print the grid
-        """
-        N = self.N
-        ri = range(0,N+2) if boundary else range(1,N+1)
-        rj = range(0,N+2) if boundary else range(1,N+1)
-        for i in ri:
-            line = ''
-            for j in rj:
-                line += u'\u2588\u2588 ' if self.states[i,j] else u'   '
-            print(line)
-        print(f"generation = {self.generation}")
+    def curse(self, stdscr, boundary=True, symbols=None):
+        if symbols:
+            self.symbols = symbols
+        irange = range(self.N+2) if boundary else range(1,self.N+1)
+        jrange = range(self.N+2) if boundary else range(1,self.N+1)
+        for i in irange:
+            s = ''
+            for j in jrange:
+                s += self.symbols[self.states[i,j]]
+            stdscr.addstr(i, 0, s)
+        stdscr.addstr(i+1, 0, str(self.generation))
+        stdscr.refresh()
 
 
     def dump(self,filename='conway'):
