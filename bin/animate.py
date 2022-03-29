@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 N = 200
-fg = FiniteGrid(N, boundary='periodic')
+fg = FiniteGrid(N, boundary='periodic', dump=True)
 
 def update(data):
     fg.evolve(draw=False)
