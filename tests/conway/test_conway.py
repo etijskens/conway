@@ -100,7 +100,15 @@ def test_pdraw_evolve():
     fg.pdraw(boundary=False)
     fg.evolve(100)
 
-
+def test_dump():
+    filename = 'conway.test'
+    fg0 = cnw.FiniteGrid(10)
+    fg0.dump(filename=filename)
+    fg1 = cnw.FiniteGrid(load=True, filename=filename)
+    assert fg0.N == fg1.N
+    assert fg0.n == fg1.n
+    assert fg0.bc == fg1.bc
+    assert np.all(fg0.states == fg1.states)
 
 
 # ==============================================================================
@@ -110,7 +118,7 @@ def test_pdraw_evolve():
 # that the source directory is on the path
 # ==============================================================================
 if __name__ == "__main__":
-    the_test_you_want_to_debug = test_pdraw_evolve
+    the_test_you_want_to_debug = test_dump
 
     print("__main__ running", the_test_you_want_to_debug)
     the_test_you_want_to_debug()

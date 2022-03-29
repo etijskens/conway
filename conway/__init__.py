@@ -66,6 +66,7 @@ Let's start off with a finite grid.
 __version__ = "0.1.0"
 
 import numpy as np
+import pickle
 
 
 class FiniteGrid:
@@ -110,30 +111,39 @@ class FiniteGrid:
     """
     boundary_conditions = ('zero', 'reflect', 'periodic')
 
-    def __init__(self, N=10, boundary='zero'):
-        self.N = N
-        self.n = N + 2
-        rng = np.random.default_rng()
-        self.states = rng.integers(0, high=2, size=(N+2,N+2))
-        # correct the boundaries
-        if 'zero'.startswith(boundary):
-            self.bc = 'zero'
-            # boundaries are zeros
-            self.apply_0bc()
-
-        elif 'reflect'.startswith(boundary):
-            self.bc = 'reflect'
-            self.apply_rbv()
-
-        elif 'periodic'.startswith(boundary):
-            self.bc = 'periodic'
-            self.apply_pbc()
+    def __init__(self, N=10, boundary='zero', dump=False, load=False, filename='conway'):
+        if load:
+            fg = FiniteGrid.load(filename=filename)
+            # transfer all properties from fg to self
+            self.__dict__ = fg.__dict__
 
         else:
-            raise ValueError("boundary not in ('zero', 'reflect', 'periodic')")
+            self.N = N
+            rng = np.random.default_rng()
+            self.states = rng.integers(0, high=2, size=(N+2,N+2))
+            # correct the boundaries
+            if 'zero'.startswith(boundary):
+                self.bc = 'zero'
+                # boundaries are zeros
+                self.apply_0bc()
 
-        self.counts = np.zeros_like(self.states, dtype=int)
-        self.generation = 0
+            elif 'reflect'.startswith(boundary):
+                self.bc = 'reflect'
+                self.apply_rbv()
+
+            elif 'periodic'.startswith(boundary):
+                self.bc = 'periodic'
+                self.apply_pbc()
+
+            else:
+                raise ValueError("boundary not in ('zero', 'reflect', 'periodic')")
+
+            self.generation = 0
+            self.counts = None
+
+            if dump:
+                self.dump(filename=filename)
+
 
     def apply_bc(self, bc=None):
         if not bc is None:
@@ -178,6 +188,9 @@ class FiniteGrid:
 
     def evolve(self, generations=1, draw=True, stop_if_static=False):
         """Let the system evolve over ``generations`` generations."""
+        if self.counts is None:
+            self.counts = np.zeros_like(self.states, dtype=int)
+
         N = self.N
         while generations>0:
             if stop_if_static:
@@ -218,15 +231,15 @@ class FiniteGrid:
     def print(self, boundary=True):
         if boundary:
             print(f'BC = {self.bc}')
-            for i in range(self.n):
+            for i in range(self.N+2):
                 s = ''
-                for j in range(self.n):
+                for j in range(self.N+2):
                     s += f"{self.states[i, j]} "
                 print(s)
         else:
-            for i in range(1,self.n-1):
+            for i in range(1,self.N+1):
                 s = ''
-                for j in range(1,self.n-1):
+                for j in range(1,self.N+1):
                     s += f"{self.states[i, j]} "
                 print(s)
         print()
@@ -244,3 +257,23 @@ class FiniteGrid:
                 line += u'\u2588\u2588 ' if self.states[i,j] else u'   '
             print(line)
         print(f"generation = {self.generation}")
+
+
+    def dump(self,filename='conway'):
+        """Pickle self (save to file)."""
+        self.counts = None # we do not need to dump counts
+        with open(f"{filename}.pickle", mode='wb') as file:
+            pickle.dump(self, file=file)
+            
+
+    @staticmethod
+    def load(filename='conway'):
+        """Unpickle a pickled FiniteGrid."""
+        fn = f"{filename}.pickle"
+        with open(fn, mode='rb') as file:
+            fg = pickle.load(file=file)
+
+        if not isinstance(fg,FiniteGrid):
+            raise RuntimeError(f"File '{fn}' does not contain a 'FiniteGrid' object.")
+
+        return fg
