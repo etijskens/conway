@@ -13,14 +13,14 @@ from curses import wrapper
 
 from conway import FiniteGrid
 
-fg = FiniteGrid(120, boundary='periodic')
+fg = FiniteGrid(30, boundary='periodic')
 # fg.symbols = ['  ','XX' ]
 
 def main(stdscr):
     """"""
     stdscr.clear()
     fg.curse(stdscr)
-    fg.evolve(generations=1000, curse=stdscr, interval=0.05)
+    fg.evolve(n_generations=1000, curse=stdscr, interval=0.05)
 
     stdscr.refresh()
     stdscr.getch()
